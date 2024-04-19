@@ -45,15 +45,13 @@ class ObligatoryCheckPointsBuilder: public CheckPointBuilder
                                 float longitude,
                                 float penalty) override
     {
-        std::string message = "Obligatory CheckPoint " +
-                               name +
+        std::string message = "Obligatory CheckPoint <<" +
+                               name + ">>" +
                                " on coordinates (" + 
                                std::to_string(latitude) + 
                                "," +
                                std::to_string(longitude) +
-                               "). Penalty " + 
-                               std::to_string(penalty)
-                               +"\n";
+                               "). Failed SU.\n";
         CheckPoint *obligatory_checkPoint = new CheckPoint(name, 
                                                           latitude, 
                                                           longitude, 
@@ -71,13 +69,15 @@ class NotObligatoryCheckPointsBuilder: public CheckPointBuilder
                                 float longitude,
                                 float penalty) override
     {
-        std::string message = "Not Obligatory CheckPoint " +
-                               name +
+        std::string message = "Not Obligatory CheckPoint <<" + 
+                                name + ">>" +
                                " on coordinates (" + 
                                std::to_string(latitude) + 
                                "," +
                                std::to_string(longitude) +
-                               "). Failed SU.\n";
+                               "). Penalty " + 
+                               std::to_string(penalty)
+                               +"\n";
         CheckPoint* notObligatory_checkPoint = new CheckPoint(name, 
                                                               latitude, 
                                                               longitude, 
