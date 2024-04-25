@@ -20,69 +20,110 @@ public:
 
 // Конкретная реализация для хранения множества в виде массива
 template <typename T>
-class VectorSet : public SetImplementation<T> {
+class ArraySet : public SetImplementation<T> {
 private:
-    std::vector<T> elements;
+    T* elements;
+    int capacity;
     int size;
 
 public:
-    VectorSet(){size=0;};
+    ArraySet() : capacity(10), size(0) {
+        elements = new T[capacity];
+    }
+
+    ArraySet(const ArraySet& vs)
+    {
+        elements = vs.elements;
+        capacity = vs.capacity;
+        size = vs.size;
+    }
+
+    ~ArraySet() {
+        delete[] elements;
+    }
+
     void addElement(T element) override {
-        elements.push_back(element);
-        size+=1;
+        if (size >= capacity) {
+            // Увеличиваем размер массива вдвое, если он заполнен
+            capacity *= 2;
+            T* newElements = new T[capacity];
+            for (int i = 0; i < size; ++i) {
+                newElements[i] = elements[i];
+            }
+            delete[] elements;
+            elements = newElements;
+        }
+        elements[size++] = element;
     }
 
     void removeElement(T element) override {
-        auto it = std::find(elements.begin(), elements.end(), element);
-        if (it != elements.end()) {
-            elements.erase(it);
+        for (int i = 0; i < size; ++i) {
+            if (elements[i] == element) {
+                for (int j = i; j < size - 1; ++j) {
+                    elements[j] = elements[j + 1];
+                }
+                size--;
+                break;
+            }
         }
-        size-=1;
     }
 
     bool containsElement(T element) const override {
-        return std::find(elements.begin(), elements.end(), element) != elements.end();
+        for (int i = 0; i < size; ++i) {
+            if (elements[i] == element) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    std::vector<T> getAsVector() override
-    {
-        return elements;
-    };
+    std::vector<T> getAsVector() override {
+        std::vector<T> result;
+        for (int i = 0; i < size; ++i) {
+            result.push_back(elements[i]);
+        }
+        return result;
+    }
 
-    void fillFromVector(std::vector<T>& dataVector) override
-    {
-        elements=dataVector;
-        size=dataVector.size();
-    };
+    void fillFromVector(std::vector<T>& dataVector) override {
+        if (capacity < dataVector.size()) {
+            delete[] elements;
+            capacity = dataVector.size() * 2;
+            elements = new T[capacity];
+        }
+        for (int i = 0; i < dataVector.size(); ++i) {
+            elements[i] = dataVector[i];
+        }
+        size = dataVector.size();
+    }
 
-    int getSize() const override 
-    {
+    int getSize() const override {
         return size;
     }
 
-    SetImplementation<T>* unionSet(SetImplementation<T>* other) override
-    {
-        SetImplementation<T>* result = new VectorSet<T>;
-        std::vector<T> data = this->getAsVector();
-        result->fillFromVector(data);
-        for(auto elementFromOther: other->getAsVector())
-        {
-            if(!other->containsElement(elementFromOther))
-                result->addElement(elementFromOther);
-        }
-        return result;
-    };
-    SetImplementation<T>* intersect(SetImplementation<T>* other) override 
-    {
-        SetImplementation<T>* result = new VectorSet<T>;
-        for(auto element: this->getAsVector())
-        {
-            if(other->containsElement(element))
+    SetImplementation<T>* unionSet(SetImplementation<T>* other) override {
+        ArraySet<T>* result = this;
+        for (int i = 0; i < other->getSize(); ++i) {
+            T element = other->getAsVector()[i];
+            if (!result->containsElement(element)) {
                 result->addElement(element);
+            }
         }
         return result;
-    };
+    }
+
+    SetImplementation<T>* intersect(SetImplementation<T>* other) override {
+        ArraySet<T>* result = new ArraySet<T>;
+        for (int i = 0; i < size; ++i) {
+            T element = elements[i];
+            if (other->containsElement(element)) {
+                result->addElement(element);
+            }
+        }
+        return result;
+    }
 };
+
 
 // Конкретная реализация для хранения множества в виде Heap-дерева
 template <typename T>
@@ -270,7 +311,7 @@ protected:
     void changeImplementation() 
     {
         std::cout<<"I am about to change implementation\n";
-        if (auto vectorImplementation = dynamic_cast<VectorSet<T>*>(implementation))
+        if (auto vectorImplementation = dynamic_cast<ArraySet<T>*>(implementation))
         {
             std::cout<<"now impl will be changed to treap\n";
             SetImplementation<T>* treapSet = new TreapSet<T>;
@@ -282,10 +323,10 @@ protected:
         else if (auto treapImplementation = dynamic_cast<TreapSet<T>*>(implementation))
         {
             std::cout<<"now impl will be changed to vector\n";
-            SetImplementation<T>* vectorSet = new VectorSet<T>;
+            SetImplementation<T>* ArraySet = new ArraySet<T>;
             auto dataFromVector = treapImplementation->getAsVector();
-            vectorSet->fillFromVector(dataFromVector);
-            implementation=vectorSet;
+            ArraySet->fillFromVector(dataFromVector);
+            implementation=ArraySet;
         }
     }
 
@@ -319,8 +360,8 @@ public:
 };
 
 int main() {
-    VectorSet<int> vectorSet;
-    Set<int> set1(&vectorSet, 4);
+    ArraySet<int> arraySet;
+    Set<int> set1(&arraySet, 4);
 
     set1.addElement(5);
     set1.addElement(10);
@@ -336,8 +377,8 @@ int main() {
     set1.addElement(228);
     set1.addElement(345);
     
-    VectorSet<int> vectorSet2;
-    Set<int> set2(&vectorSet2, 10);
+    ArraySet<int> ArraySet2;
+    Set<int> set2(&ArraySet2, 10);
     set2.addElement(345);
     set2.addElement(228);
     set2.addElement(985);
